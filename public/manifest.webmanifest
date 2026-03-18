@@ -1,0 +1,16 @@
+{
+  "name": "Site Hub",
+  "short_name": "Site Hub",
+  "description": "Offline-first website link organizer with category tabs.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ecfeff",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
