@@ -10,6 +10,11 @@ import { CSS } from '@dnd-kit/utilities'
 import WebsiteTile from './WebsiteTile'
 import { useGsapStagger } from '../hooks/useGsapStagger'
 
+const SORTABLE_CARD_TRANSITION = {
+  duration: 260,
+  easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+}
+
 function SortableWebsiteCard({
   website,
   onEdit,
@@ -17,20 +22,27 @@ function SortableWebsiteCard({
   dragMode,
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: website.id, disabled: !dragMode })
+    useSortable({
+      id: website.id,
+      disabled: !dragMode,
+      transition: SORTABLE_CARD_TRANSITION,
+    })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.8 : 1,
+    opacity: isDragging ? 0.88 : 1,
     zIndex: isDragging ? 30 : 1,
+    willChange: 'transform',
   }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className={`gsap-tile ${dragMode ? 'cursor-grab active:cursor-grabbing' : ''}`}
+      className={`gsap-tile ${
+        dragMode ? 'cursor-grab active:cursor-grabbing touch-none' : ''
+      }`}
       {...attributes}
       {...listeners}
     >
@@ -58,7 +70,7 @@ export default function WebsiteGrid({
   const suppressClickNavigationRef = useRef(false)
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { distance: 6 },
     }),
   )
 
@@ -157,7 +169,7 @@ export default function WebsiteGrid({
       >
         <div
           ref={gridRef}
-          className="grid grid-cols-[repeat(auto-fill,minmax(84px,94px))] justify-center gap-2.5 sm:grid-cols-[repeat(auto-fill,minmax(90px,102px))]"
+          className="grid grid-cols-[repeat(auto-fill,minmax(72px,82px))] justify-center gap-2 sm:grid-cols-[repeat(auto-fill,minmax(78px,88px))]"
         >
           {websites.map((website) => (
             <SortableWebsiteCard

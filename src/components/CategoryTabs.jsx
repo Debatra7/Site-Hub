@@ -21,6 +21,11 @@ const activeTabClass = 'accent-border bg-black text-slate-100 accent-shadow'
 const inactiveTabClass =
   'border-slate-800 bg-black text-slate-400 hover:bg-slate-950 hover:text-slate-200'
 
+const SORTABLE_TAB_TRANSITION = {
+  duration: 260,
+  easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+}
+
 function SortableTab({
   category,
   isActive,
@@ -29,13 +34,18 @@ function SortableTab({
   onRenameCategory,
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: category.id, disabled: !dragMode })
+    useSortable({
+      id: category.id,
+      disabled: !dragMode,
+      transition: SORTABLE_TAB_TRANSITION,
+    })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.82 : 1,
+    opacity: isDragging ? 0.88 : 1,
     zIndex: isDragging ? 20 : 1,
+    willChange: 'transform',
   }
 
   return (
@@ -45,7 +55,7 @@ function SortableTab({
       {...attributes}
       {...listeners}
       className={`gsap-nav-tab group relative flex h-8 shrink-0 items-center rounded-lg border px-0.5 pr-7 transition sm:h-9 sm:pr-8 ${
-        dragMode ? 'cursor-grab active:cursor-grabbing' : ''
+        dragMode ? 'cursor-grab active:cursor-grabbing touch-none' : ''
       } ${isActive ? activeTabClass : inactiveTabClass}`}
       title={dragMode ? `Drag ${category.name}` : category.name}
     >
@@ -94,7 +104,7 @@ export default function CategoryTabs({
   const navRef = useRef(null)
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
+      activationConstraint: { distance: 6 },
     }),
   )
 
