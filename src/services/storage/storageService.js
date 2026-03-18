@@ -272,7 +272,7 @@ export const addWebsiteEntry = async (categoryId, input) => {
       updatedAt: timestamp,
     }
     websiteId = website.id
-    category.websites.unshift(website)
+    category.websites.push(website)
     category.updatedAt = timestamp
     return draft
   })

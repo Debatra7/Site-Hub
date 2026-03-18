@@ -1,0 +1,38 @@
+{
+  "categories": [
+    {
+      "name": "Work",
+      "websites": [
+        {
+          "name": "GitHub",
+          "url": "https://github.com"
+        },
+        {
+          "name": "Stack Overflow",
+          "url": "https://stackoverflow.com"
+        },
+        {
+          "name": "MDN Web Docs",
+          "url": "https://developer.mozilla.org"
+        }
+      ]
+    },
+    {
+      "name": "Personal",
+      "websites": [
+        {
+          "name": "Netflix",
+          "url": "https://www.netflix.com"
+        },
+        {
+          "name": "Wikipedia",
+          "url": "https://www.wikipedia.org"
+        },
+        {
+          "name": "Medium",
+          "url": "https://medium.com"
+        }
+      ]
+    }
+  ]
+}
