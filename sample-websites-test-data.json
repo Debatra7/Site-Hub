@@ -1,37 +1,35 @@
 {
   "categories": [
     {
+      "name": "Home",
+      "websites": [
+        { "name": "YouTube", "url": "https://youtube.com" },
+        { "name": "Reddit", "url": "https://reddit.com" },
+        { "name": "Gmail", "url": "https://mail.google.com" }
+      ]
+    },
+    {
       "name": "Work",
       "websites": [
-        {
-          "name": "GitHub",
-          "url": "https://github.com"
-        },
-        {
-          "name": "Stack Overflow",
-          "url": "https://stackoverflow.com"
-        },
-        {
-          "name": "MDN Web Docs",
-          "url": "https://developer.mozilla.org"
-        }
+        { "name": "GitHub", "url": "https://github.com" },
+        { "name": "Stack Overflow", "url": "https://stackoverflow.com" },
+        { "name": "MDN Web Docs", "url": "https://developer.mozilla.org" }
+      ]
+    },
+    {
+      "name": "Learning",
+      "websites": [
+        { "name": "freeCodeCamp", "url": "https://freecodecamp.org" },
+        { "name": "Roadmap.sh", "url": "https://roadmap.sh" },
+        { "name": "Frontend Mentor", "url": "https://frontendmentor.io" }
       ]
     },
     {
       "name": "Personal",
       "websites": [
-        {
-          "name": "Netflix",
-          "url": "https://www.netflix.com"
-        },
-        {
-          "name": "Wikipedia",
-          "url": "https://www.wikipedia.org"
-        },
-        {
-          "name": "Medium",
-          "url": "https://medium.com"
-        }
+        { "name": "Netflix", "url": "https://netflix.com" },
+        { "name": "Wikipedia", "url": "https://wikipedia.org" },
+        { "name": "Medium", "url": "https://medium.com" }
       ]
     }
   ]

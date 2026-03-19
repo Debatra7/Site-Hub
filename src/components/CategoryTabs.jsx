@@ -183,7 +183,7 @@ export default function CategoryTabs({
   return (
     <header
       ref={navRef}
-      className="sticky top-0 z-40 border-b border-slate-600/30 bg-slate-950/40 shadow-[0_10px_30px_-28px_rgb(0_0_0/0.9)] backdrop-blur-xl"
+      className="fixed left-0 right-0 top-0 z-40 border-b border-slate-600/30 bg-slate-950/40 shadow-[0_10px_30px_-28px_rgb(0_0_0/0.9)] backdrop-blur-xl"
     >
       <div className="flex h-11 w-full items-center gap-1 px-0 sm:h-12 sm:gap-2">
         <DndContext

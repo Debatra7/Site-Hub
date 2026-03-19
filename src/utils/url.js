@@ -50,15 +50,6 @@ export const validateAndNormalizeUrl = (rawValue) => {
   }
 }
 
-export const buildFaviconUrl = (normalizedUrl) => {
-  try {
-    const parsed = new URL(normalizedUrl)
-    return `${parsed.origin}/favicon.ico`
-  } catch {
-    return ''
-  }
-}
-
 export const buildFaviconCandidates = (rawUrl, preferredFaviconUrl = '') => {
   const candidates = []
   const addCandidate = (value) => {

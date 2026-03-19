@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { nowIso } from '../../utils/time'
-import { buildFaviconUrl, validateAndNormalizeUrl } from '../../utils/url'
+import { validateAndNormalizeUrl } from '../../utils/url'
 import { readRootRecord, writeRootRecord } from './db'
 
 const SCHEMA_VERSION = 1
@@ -13,8 +12,9 @@ const cleanName = (value) => value.trim().replace(/\s+/g, ' ')
 const normalizeAccentColor = (value) =>
   HEX_COLOR_REGEX.test(value || '') ? value.toLowerCase() : DEFAULT_ACCENT_COLOR
 
-const createDefaultSettings = () => ({
+const createDefaultSettings = (primaryCategoryId = '') => ({
   accentColor: DEFAULT_ACCENT_COLOR,
+  primaryCategoryId,
 })
 
 const clone = (value) => {
@@ -25,23 +25,23 @@ const clone = (value) => {
 }
 
 const createCategory = (name = DEFAULT_CATEGORY_NAME) => {
-  const timestamp = nowIso()
   return {
     id: uuidv4(),
     name,
-    createdAt: timestamp,
-    updatedAt: timestamp,
     websites: [],
   }
 }
 
-const createDefaultData = () => ({
-  schemaVersion: SCHEMA_VERSION,
-  settings: createDefaultSettings(),
-  categories: [createCategory()],
-})
+const createDefaultData = () => {
+  const primaryCategory = createCategory()
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    settings: createDefaultSettings(primaryCategory.id),
+    categories: [primaryCategory],
+  }
+}
 
-const normalizeWebsiteShape = (website, timestamp) => {
+const normalizeWebsiteShape = (website) => {
   const normalized = validateAndNormalizeUrl(website?.url ?? '')
   const normalizedUrl = normalized.isValid
     ? normalized.normalizedUrl
@@ -51,44 +51,47 @@ const normalizeWebsiteShape = (website, timestamp) => {
     id: website?.id || uuidv4(),
     name: cleanName(website?.name || website?.url || 'Untitled website'),
     url: normalizedUrl,
-    faviconUrl: website?.faviconUrl || buildFaviconUrl(normalizedUrl),
-    createdAt: website?.createdAt || timestamp,
-    updatedAt: website?.updatedAt || timestamp,
   }
 }
 
-const normalizeCategoryShape = (category, timestamp) => {
+const normalizeCategoryShape = (category) => {
   const websites = Array.isArray(category?.websites) ? category.websites : []
   return {
     id: category?.id || uuidv4(),
     name: cleanName(category?.name || DEFAULT_CATEGORY_NAME),
-    createdAt: category?.createdAt || timestamp,
-    updatedAt: category?.updatedAt || timestamp,
-    websites: websites.map((website) => normalizeWebsiteShape(website, timestamp)),
+    websites: websites.map((website) => normalizeWebsiteShape(website)),
   }
 }
 
 const ensureDataShape = (value) => {
-  const timestamp = nowIso()
   const categories = Array.isArray(value?.categories)
-    ? value.categories.map((category) => normalizeCategoryShape(category, timestamp))
+    ? value.categories.map((category) => normalizeCategoryShape(category))
     : []
   if (
     categories.length === 1 &&
     categories[0].name.toLowerCase() === 'inbox'
   ) {
     categories[0].name = DEFAULT_CATEGORY_NAME
-    categories[0].updatedAt = timestamp
   }
+
+  const safeCategories = categories.length > 0 ? categories : [createCategory()]
+  const requestedPrimaryId = value?.settings?.primaryCategoryId || ''
+  const hasRequestedPrimary = safeCategories.some(
+    (category) => category.id === requestedPrimaryId,
+  )
+  const primaryCategoryId = hasRequestedPrimary
+    ? requestedPrimaryId
+    : safeCategories[0].id
 
   return {
     schemaVersion: SCHEMA_VERSION,
     settings: {
-      ...createDefaultSettings(),
+      ...createDefaultSettings(primaryCategoryId),
       ...(value?.settings || {}),
       accentColor: normalizeAccentColor(value?.settings?.accentColor),
+      primaryCategoryId,
     },
-    categories: categories.length > 0 ? categories : [createCategory()],
+    categories: safeCategories,
   }
 }
 
@@ -148,7 +151,6 @@ const parseWebsiteInput = (input) => {
   return {
     name,
     url: urlResult.normalizedUrl,
-    faviconUrl: buildFaviconUrl(urlResult.normalizedUrl),
   }
 }
 
@@ -230,7 +232,6 @@ export const renameCategoryEntry = async (categoryId, rawName) => {
     }
 
     category.name = name
-    category.updatedAt = nowIso()
     return draft
   })
 
@@ -239,6 +240,10 @@ export const renameCategoryEntry = async (categoryId, rawName) => {
 
 export const deleteCategoryEntry = async (categoryId) => {
   const data = await mutate((draft) => {
+    if (draft.settings?.primaryCategoryId === categoryId) {
+      throw new Error('Primary category cannot be deleted.')
+    }
+
     const nextCategories = draft.categories.filter(
       (category) => category.id !== categoryId,
     )
@@ -262,18 +267,13 @@ export const addWebsiteEntry = async (categoryId, input) => {
       throw new Error('This URL already exists in the selected category.')
     }
 
-    const timestamp = nowIso()
     const website = {
       id: uuidv4(),
       name: websiteInput.name,
       url: websiteInput.url,
-      faviconUrl: websiteInput.faviconUrl,
-      createdAt: timestamp,
-      updatedAt: timestamp,
     }
     websiteId = website.id
     category.websites.push(website)
-    category.updatedAt = timestamp
     return draft
   })
 
@@ -292,12 +292,8 @@ export const updateWebsiteEntry = async (categoryId, websiteId, input) => {
       throw new Error('Another website already uses this URL.')
     }
 
-    const timestamp = nowIso()
     website.name = websiteInput.name
     website.url = websiteInput.url
-    website.faviconUrl = websiteInput.faviconUrl
-    website.updatedAt = timestamp
-    category.updatedAt = timestamp
     return draft
   })
 
@@ -313,7 +309,6 @@ export const deleteWebsiteEntry = async (categoryId, websiteId) => {
     }
 
     category.websites = nextWebsites
-    category.updatedAt = nowIso()
     return draft
   })
 
@@ -340,15 +335,21 @@ export const reorderCategoriesEntry = async (orderedCategoryIds) => {
   }
 
   const data = await mutate((draft) => {
-    const reordered = reorderByIds(draft.categories, orderedCategoryIds)
+    let reordered = reorderByIds(draft.categories, orderedCategoryIds)
     if (reordered.length !== draft.categories.length) {
       throw new Error('Invalid category order.')
     }
 
-    const timestamp = nowIso()
-    reordered.forEach((category) => {
-      category.updatedAt = timestamp
-    })
+    const primaryCategoryId = draft.settings?.primaryCategoryId
+    if (primaryCategoryId) {
+      const primaryIndex = reordered.findIndex(
+        (category) => category.id === primaryCategoryId,
+      )
+      if (primaryIndex > 0) {
+        reordered = [reordered[primaryIndex], ...reordered.slice(0, primaryIndex), ...reordered.slice(primaryIndex + 1)]
+      }
+    }
+
     draft.categories = reordered
     return draft
   })
@@ -369,7 +370,6 @@ export const reorderWebsitesEntry = async (categoryId, orderedWebsiteIds) => {
     }
 
     category.websites = reordered
-    category.updatedAt = nowIso()
     return draft
   })
 
@@ -379,12 +379,10 @@ export const reorderWebsitesEntry = async (categoryId, orderedWebsiteIds) => {
 export const exportAppDataAsJson = async () => {
   const data = await loadData()
   const payload = {
-    format: 'site-hub-categories-v1',
-    exportedAt: nowIso(),
     categories: data.categories,
   }
 
-  return JSON.stringify(payload, null, 2)
+  return JSON.stringify(payload)
 }
 
 export const importAppDataFromJson = async (rawJson) => {

@@ -53,6 +53,7 @@ const toRgb = (hexColor) => {
 function App() {
   const {
     categories,
+    primaryCategoryId,
     activeCategoryId,
     accentColor,
     isBootstrapping,
@@ -79,6 +80,7 @@ function App() {
   } = useSiteHubStore(
     useShallow((state) => ({
       categories: state.categories,
+      primaryCategoryId: state.primaryCategoryId,
       activeCategoryId: state.activeCategoryId,
       accentColor: state.accentColor,
       isBootstrapping: state.isBootstrapping,
@@ -271,6 +273,9 @@ function App() {
     if (categoryModal.mode !== 'edit' || !categoryModal.category) {
       return
     }
+    if (categoryModal.category.id === primaryCategoryId) {
+      return
+    }
 
     const selectedCategory = categoryModal.category
     closeCategoryModal()
@@ -354,7 +359,7 @@ function App() {
           canAddWebsite={Boolean(activeCategory)}
         />
 
-        <main className="flex min-h-[calc(100vh-44px)] w-full flex-col sm:min-h-[calc(100vh-48px)]">
+        <main className="flex min-h-screen w-full flex-col pt-11 sm:pt-12">
           {errorMessage ? (
             <section className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl border border-rose-500/35 bg-rose-500/10 px-4 py-3 backdrop-blur-md sm:mx-6">
               <p className="text-sm font-medium text-rose-200">{errorMessage}</p>
@@ -394,6 +399,7 @@ function App() {
           isOpen={categoryModal.isOpen}
           mode={categoryModal.mode}
           initialName={categoryModal.category?.name || ''}
+          canDelete={categoryModal.category?.id !== primaryCategoryId}
           onClose={closeCategoryModal}
           onSubmit={handleCategorySubmit}
           onRequestDelete={handleRequestDeleteCategoryFromEditor}

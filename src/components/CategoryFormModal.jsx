@@ -5,6 +5,7 @@ export default function CategoryFormModal({
   isOpen,
   mode,
   initialName,
+  canDelete = true,
   onClose,
   onSubmit,
   onRequestDelete,
@@ -53,7 +54,7 @@ export default function CategoryFormModal({
         ) : null}
 
         <div className="flex items-center justify-between gap-2 pt-2">
-          {mode === 'edit' ? (
+          {mode === 'edit' && canDelete ? (
             <button
               type="button"
               onClick={onRequestDelete}

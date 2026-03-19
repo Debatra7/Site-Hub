@@ -31,6 +31,7 @@ const resolveActiveCategoryId = (currentId, categories) => {
 const applyData = (state, data) => ({
   categories: data.categories,
   accentColor: data.settings?.accentColor || DEFAULT_ACCENT_COLOR,
+  primaryCategoryId: data.settings?.primaryCategoryId || data.categories[0]?.id || null,
   activeCategoryId: resolveActiveCategoryId(state.activeCategoryId, data.categories),
 })
 
@@ -56,6 +57,7 @@ const runMutation = async (set, get, operation, onAfterSuccess) => {
 
 export const useSiteHubStore = create((set, get) => ({
   categories: [],
+  primaryCategoryId: null,
   activeCategoryId: null,
   searchQuery: '',
   accentColor: DEFAULT_ACCENT_COLOR,

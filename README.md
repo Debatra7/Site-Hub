@@ -1,6 +1,6 @@
 # Site Hub
 
-Offline-first web app for saving and organizing website links in category-based tabs.
+A simple way to make life easier by organizing all your important websites and links in one place.
 
 ## 🚀 Live Demo
 
@@ -8,12 +8,13 @@ Check out the live version: [https://site-hub.netlify.app/](https://site-hub.net
 
 ## ✨ Features
 
-- **Category for Different Type Websites**: Organize websites into categories based on their type or purpose.
-- **Customizable Theme**: Personalize the app's appearance with customizable themes and accent colors.
-- **Data Import Export Feature**: Easily import and export your website data as JSON for backup and migration.
-- **Drag and Drop UI for Website Cards**: Intuitive drag-and-drop interface to reorder website cards within categories.
-- **Responsive Design**: Optimized for all screen sizes, from mobile to desktop.
-- **Data Validation**: Ensures URLs are valid and prevents duplicates within categories.
+- **Primary Home Tab**: A default primary tab always exists. It can be renamed, but cannot be deleted from the category editor.
+- **Delete Everything Reset**: One-click full reset from Settings clears categories, websites, and settings, then recreates default app data.
+- **Import / Export JSON**: Backup and restore category data with JSON payloads.
+- **Drag and Drop Reordering**: Reorder categories and website cards using DnD interactions.
+- **Theme Customization**: Accent color customization with presets and manual color input.
+- **Offline-First**: IndexedDB persistence and service-worker-based app shell caching.
+- **Validation & Duplicate Protection**: URL normalization and duplicate URL prevention within a category.
 
 ## Tech Stack
 
@@ -22,7 +23,8 @@ Check out the live version: [https://site-hub.netlify.app/](https://site-hub.net
 - Zustand
 - IndexedDB via `idb`
 - `uuid` for unique IDs
-- `dayjs` for timestamps
+- `@dnd-kit` for drag and drop
+- GSAP for UI motion
 
 ## Run Locally
 
@@ -40,44 +42,68 @@ npm run build
 
 ## Usage
 
-1. **Add Categories**: Create new categories to organize your websites.
-2. **Add Websites**: Within each category, add websites with names and URLs.
-3. **Search**: Use the search bar to filter websites by name or URL.
-4. **Reorder**: Drag and drop to rearrange categories and websites.
-5. **Settings**: Customize the accent color and manage data import/export.
-6. **Offline**: The app caches resources for offline use.
+1. **Create / Rename Categories**: Manage tabs for organizing links.
+2. **Add / Edit / Delete Websites**: Maintain website cards inside each category.
+3. **Reorder Tabs and Cards**: Enable drag mode and rearrange categories/websites.
+4. **Use Settings**:
+   - change accent color
+   - import JSON
+   - export JSON
+   - delete everything (full reset)
+5. **Primary Tab Rule**: The primary Home tab cannot be deleted through normal category deletion.
 
 ## Architecture
 
 - `src/services/storage/db.js`: low-level IndexedDB wrapper.
-- `src/services/storage/storageService.js`: storage CRUD and data validation.
+- `src/services/storage/storageService.js`: normalized storage CRUD, import/export, and business rules.
 - `src/store/useSiteHubStore.js`: Zustand state and async orchestration.
 - `src/components/*`: modular UI (tabs, grid, tiles, modals).
 - `src/utils/url.js`: URL normalization/validation helpers.
+- `src/services/offline/registerServiceWorker.js`: production service worker registration.
 - `public/sw.js`: service worker for offline app shell caching.
 
-## Data Shape
+## Persisted Data Shape
 
 ```json
 {
   "schemaVersion": 1,
+  "settings": {
+    "accentColor": "#ef4444",
+    "primaryCategoryId": "uuid"
+  },
   "categories": [
     {
       "id": "uuid",
       "name": "Category Name",
-      "createdAt": "ISO timestamp",
-      "updatedAt": "ISO timestamp",
       "websites": [
         {
           "id": "uuid",
           "name": "Website Name",
-          "url": "https://example.com",
-          "faviconUrl": "https://example.com/favicon.ico",
-          "createdAt": "ISO timestamp",
-          "updatedAt": "ISO timestamp"
+          "url": "https://example.com"
         }
       ]
     }
+  ]
+}
+```
+
+### Import Shape
+
+Import supports either:
+
+- `{ "categories": [...] }`
+- `[...]` (categories array directly)
+
+`id` values are optional on import. Missing IDs are generated during normalization before data is saved.
+
+### Export Shape
+
+Export returns compact JSON (`JSON.stringify`) with category data:
+
+```json
+{
+  "categories": [
+    /* ... */
   ]
 }
 ```
