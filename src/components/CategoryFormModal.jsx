@@ -41,13 +41,13 @@ export default function CategoryFormModal({
             autoFocus
             required
             maxLength={60}
-            className="focus-ring w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100"
+            className="focus-ring glass-input w-full rounded-xl px-3 py-2 text-sm text-slate-100"
             placeholder="Example: Work Tools"
           />
         </label>
 
         {errorMessage ? (
-          <p className="rounded-xl border border-rose-900/60 bg-rose-950/35 px-3 py-2 text-sm text-rose-300">
+          <p className="rounded-xl border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-sm text-rose-200 backdrop-blur-md">
             {errorMessage}
           </p>
         ) : null}
@@ -57,7 +57,7 @@ export default function CategoryFormModal({
             <button
               type="button"
               onClick={onRequestDelete}
-              className="focus-ring rounded-xl border border-rose-900 bg-rose-950/40 px-4 py-2 text-sm font-semibold text-rose-300 transition hover:border-rose-700"
+              className="focus-ring rounded-xl border border-rose-400/35 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/18"
             >
               Delete
             </button>
@@ -69,14 +69,14 @@ export default function CategoryFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="focus-ring rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500"
+              className="focus-ring glass-button rounded-xl px-4 py-2 text-sm font-semibold text-slate-200"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="focus-ring accent-bg accent-border rounded-xl border px-4 py-2 text-sm font-semibold text-slate-950 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+              className="focus-ring accent-bg accent-border accent-shadow rounded-xl border px-4 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? 'Saving...' : mode === 'edit' ? 'Save Name' : 'Create'}
             </button>

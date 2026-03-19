@@ -1,6 +1,6 @@
-import { memo, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import { RiPencilLine } from '@remixicon/react'
-import { toHostname } from '../utils/url'
+import { buildFaviconCandidates, toHostname } from '../utils/url'
 
 const WebsiteTile = memo(function WebsiteTile({
   website,
@@ -10,10 +10,30 @@ const WebsiteTile = memo(function WebsiteTile({
   dragMode = false,
   shouldSuppressNavigation,
 }) {
+  const [faviconIndex, setFaviconIndex] = useState(0)
   const [faviconMissing, setFaviconMissing] = useState(false)
   const hostname = useMemo(() => toHostname(website.url), [website.url])
+  const faviconCandidates = useMemo(
+    () => buildFaviconCandidates(website.url, website.faviconUrl),
+    [website.url, website.faviconUrl],
+  )
+  const currentFaviconUrl = faviconCandidates[faviconIndex] || ''
   const fallbackLetter = website.name?.charAt(0)?.toUpperCase() || '?'
   const tooltip = `${website.name} - ${hostname}`
+
+  useEffect(() => {
+    setFaviconIndex(0)
+    setFaviconMissing(false)
+  }, [website.url, website.faviconUrl])
+
+  const handleFaviconError = () => {
+    if (faviconIndex < faviconCandidates.length - 1) {
+      setFaviconIndex((index) => index + 1)
+      return
+    }
+
+    setFaviconMissing(true)
+  }
 
   return (
     <article
@@ -33,22 +53,23 @@ const WebsiteTile = memo(function WebsiteTile({
           event.preventDefault()
           event.stopPropagation()
         }}
-        className={`focus-ring flex h-full w-full flex-col items-center justify-center gap-1 rounded-lg border border-slate-800 bg-black/95 p-1 transition duration-200 hover:-translate-y-0.5 hover:border-[color:rgb(var(--accent-rgb)/0.65)] ${
+        className={`focus-ring glass-panel flex h-full w-full flex-col items-center justify-center gap-1 rounded-lg p-1 transition duration-200 hover:-translate-y-0.5 hover:border-[color:rgb(var(--accent-rgb)/0.55)] ${
           dragMode ? 'pointer-events-none' : ''
         }`}
       >
-        {website.faviconUrl && !faviconMissing ? (
-          <div className="rounded-lg border border-slate-700 bg-slate-900/70 p-0.5 shadow-[0_0_20px_-8px_rgb(var(--accent-rgb)/0.85)] transition group-hover:shadow-[0_0_30px_-8px_rgb(var(--accent-rgb)/1)]">
+        {currentFaviconUrl && !faviconMissing ? (
+          <div className="glass-panel-soft rounded-lg p-0.5 transition group-hover:border-[color:rgb(var(--accent-rgb)/0.4)]">
             <img
-              src={website.faviconUrl}
+              src={currentFaviconUrl}
               alt=""
               loading="lazy"
-              className="h-9 w-9 rounded-md bg-slate-800 object-cover sm:h-10 sm:w-10"
-              onError={() => setFaviconMissing(true)}
+              referrerPolicy="no-referrer"
+              className="h-9 w-9 rounded-md bg-slate-900/70 object-cover sm:h-10 sm:w-10"
+              onError={handleFaviconError}
             />
           </div>
         ) : (
-          <div className="grid h-10 w-10 place-items-center rounded-lg border border-slate-700 bg-slate-900 text-sm font-bold text-slate-300 shadow-[0_0_20px_-10px_rgb(var(--accent-rgb)/0.85)] sm:h-11 sm:w-11">
+          <div className="glass-panel-soft grid h-10 w-10 place-items-center rounded-lg text-sm font-bold text-slate-300 sm:h-11 sm:w-11">
             {fallbackLetter}
           </div>
         )}
@@ -69,7 +90,7 @@ const WebsiteTile = memo(function WebsiteTile({
           }
           onEdit(website)
         }}
-        className={`focus-ring absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-md border border-slate-700 bg-black text-xs text-slate-300 opacity-0 transition hover:text-[var(--accent-color)] group-hover:opacity-100 ${
+        className={`focus-ring glass-button absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-md text-xs text-slate-300 opacity-0 transition hover:text-[var(--accent-color)] group-hover:opacity-100 ${
           dragMode ? 'pointer-events-none opacity-0' : ''
         }`}
         title={`Edit ${website.name}`}

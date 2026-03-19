@@ -9,17 +9,17 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  RiAddLine,
-  RiDraggable,
-  RiGlobalLine,
+  RiAddCircleLine,
+  RiDragMoveLine,
+  RiFunctionAddLine,
   RiPencilLine,
-  RiSettings4Line,
+  RiSettings5Line,
 } from '@remixicon/react'
 
-const activeTabClass = 'accent-border bg-black text-slate-100 accent-shadow'
+const activeTabClass = 'glass-panel accent-border text-slate-100 accent-shadow'
 
 const inactiveTabClass =
-  'border-slate-800 bg-black text-slate-400 hover:bg-slate-950 hover:text-slate-200'
+  'glass-panel-soft text-slate-300 hover:border-slate-400/40 hover:text-slate-100'
 
 const SORTABLE_TAB_TRANSITION = {
   duration: 260,
@@ -54,7 +54,7 @@ function SortableTab({
       style={style}
       {...attributes}
       {...listeners}
-      className={`gsap-nav-tab group relative flex h-8 shrink-0 items-center rounded-lg border px-0.5 pr-7 transition sm:h-9 sm:pr-8 ${
+      className={`gsap-nav-tab group relative flex h-8 shrink-0 items-center overflow-hidden rounded-lg border px-0.5 pr-7 transition sm:h-9 sm:pr-8 ${
         dragMode ? 'cursor-grab active:cursor-grabbing touch-none' : ''
       } ${isActive ? activeTabClass : inactiveTabClass}`}
       title={dragMode ? `Drag ${category.name}` : category.name}
@@ -66,6 +66,12 @@ function SortableTab({
       >
         <span className="block truncate">{category.name}</span>
       </button>
+      {isActive ? (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-[inherit] border border-[color:rgb(var(--accent-rgb)/0.58)] shadow-[0_0_0_1px_rgb(var(--accent-rgb)/0.22),0_0_18px_-6px_rgb(var(--accent-rgb)/0.72)]"
+        />
+      ) : null}
 
       <button
         type="button"
@@ -75,7 +81,7 @@ function SortableTab({
           onRenameCategory(category)
         }}
         disabled={dragMode}
-        className={`focus-ring absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-md border border-slate-700 bg-black text-xs text-slate-300 transition hover:text-[var(--accent-color)] sm:h-6 sm:w-6 ${
+        className={`focus-ring glass-button absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-md text-xs text-slate-300 transition hover:text-[var(--accent-color)] sm:h-6 sm:w-6 ${
           dragMode
             ? 'pointer-events-none opacity-0'
             : 'opacity-0 group-hover:opacity-100'
@@ -177,7 +183,7 @@ export default function CategoryTabs({
   return (
     <header
       ref={navRef}
-      className="sticky top-0 z-40 border-b border-slate-800 bg-black backdrop-blur-md"
+      className="sticky top-0 z-40 border-b border-slate-600/30 bg-slate-950/40 shadow-[0_10px_30px_-28px_rgb(0_0_0/0.9)] backdrop-blur-xl"
     >
       <div className="flex h-11 w-full items-center gap-1 px-0 sm:h-12 sm:gap-2">
         <DndContext
@@ -204,10 +210,10 @@ export default function CategoryTabs({
               <button
                 type="button"
                 onClick={onCreateCategory}
-                className="focus-ring ml-1 grid h-7 w-7 shrink-0 place-items-center rounded-lg border border-slate-700 bg-black text-sm text-slate-300 transition hover:border-slate-600 hover:text-white sm:h-8 sm:w-8"
+                className="focus-ring glass-button ml-1 grid h-7 w-7 shrink-0 place-items-center rounded-lg text-sm text-slate-300 sm:h-8 sm:w-8"
                 title="Create new tab"
               >
-                <RiAddLine className="h-4 w-4" aria-hidden="true" />
+                <RiAddCircleLine className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
           </SortableContext>
@@ -218,10 +224,10 @@ export default function CategoryTabs({
             type="button"
             onClick={onAddWebsite}
             disabled={!canAddWebsite}
-            className="focus-ring accent-bg accent-border inline-flex h-7 items-center gap-1 rounded-lg border px-2 text-[11px] font-semibold text-slate-950 transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:h-8 sm:px-3 sm:text-xs"
+            className="focus-ring accent-bg accent-border accent-shadow inline-flex h-7 items-center gap-1 rounded-lg border px-2 text-[11px] font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-60 sm:h-8 sm:px-3 sm:text-xs"
             title="Add website"
           >
-            <RiGlobalLine className="h-3.5 w-3.5" aria-hidden="true" />
+            <RiFunctionAddLine className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="hidden sm:block">Add Website</span>
           </button>
 
@@ -231,21 +237,21 @@ export default function CategoryTabs({
             className={`focus-ring inline-flex h-7 items-center gap-1 rounded-lg border px-2 text-[11px] font-semibold transition sm:h-8 sm:px-3 sm:text-xs ${
               dragMode
                 ? 'accent-bg accent-border text-slate-950'
-                : 'border-slate-700 bg-black text-slate-200 hover:border-slate-500'
+                : 'glass-button text-slate-200'
             }`}
             title={dragMode ? 'Disable drag mode' : 'Enable drag mode'}
           >
-            <RiDraggable className="h-3.5 w-3.5" aria-hidden="true" />
+            <RiDragMoveLine className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="hidden sm:block">{dragMode ? 'Dragging On' : 'Drag Mode'}</span>
           </button>
 
           <button
             type="button"
             onClick={onOpenSettings}
-            className="focus-ring grid h-7 w-7 place-items-center rounded-lg border border-slate-700 bg-black text-sm text-slate-300 transition hover:border-slate-600 hover:text-white sm:h-8 sm:w-8"
+            className="focus-ring glass-button grid h-7 w-7 place-items-center rounded-lg text-sm text-slate-300 sm:h-8 sm:w-8"
             title="Settings"
           >
-            <RiSettings4Line className="h-4 w-4" aria-hidden="true" />
+            <RiSettings5Line className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       </div>

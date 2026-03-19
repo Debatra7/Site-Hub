@@ -96,7 +96,7 @@ export default function WebsiteGrid({
 
   if (!hasCategory) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-700 bg-black px-5 py-10 text-center">
+      <div className="glass-panel-soft rounded-2xl border-dashed px-5 py-10 text-center">
         <h3 className="text-base font-semibold text-slate-200">No category selected</h3>
         <p className="mt-2 text-sm text-slate-400">
           Create a tab to start saving website shortcuts.
@@ -107,7 +107,7 @@ export default function WebsiteGrid({
 
   if (websites.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-slate-700 bg-black px-5 py-10 text-center">
+      <div className="glass-panel-soft rounded-2xl border-dashed px-5 py-10 text-center">
         <h3 className="text-base font-semibold text-slate-200">No websites yet</h3>
         <p className="mt-2 text-sm text-slate-400">Add your first website in this tab.</p>
       </div>

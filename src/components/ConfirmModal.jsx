@@ -37,7 +37,7 @@ export default function ConfirmModal({
         <p className="text-sm text-slate-300">{message}</p>
 
         {errorMessage ? (
-          <p className="rounded-xl border border-rose-900/60 bg-rose-950/35 px-3 py-2 text-sm text-rose-300">
+          <p className="rounded-xl border border-rose-500/35 bg-rose-500/10 px-3 py-2 text-sm text-rose-200 backdrop-blur-md">
             {errorMessage}
           </p>
         ) : null}
@@ -46,7 +46,7 @@ export default function ConfirmModal({
           <button
             type="button"
             onClick={onClose}
-            className="focus-ring rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:border-slate-500"
+            className="focus-ring glass-button rounded-xl px-4 py-2 text-sm font-semibold text-slate-200"
           >
             Cancel
           </button>
@@ -54,7 +54,7 @@ export default function ConfirmModal({
             type="button"
             onClick={handleConfirm}
             disabled={isSubmitting}
-            className="focus-ring rounded-xl border border-rose-900 bg-rose-800/85 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-70"
+            className="focus-ring rounded-xl border border-rose-400/35 bg-rose-500/20 px-4 py-2 text-sm font-semibold text-rose-100 transition hover:bg-rose-500/28 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isSubmitting ? 'Deleting...' : confirmLabel}
           </button>

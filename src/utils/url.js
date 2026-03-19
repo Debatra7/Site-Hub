@@ -59,6 +59,32 @@ export const buildFaviconUrl = (normalizedUrl) => {
   }
 }
 
+export const buildFaviconCandidates = (rawUrl, preferredFaviconUrl = '') => {
+  const candidates = []
+  const addCandidate = (value) => {
+    if (!value || candidates.includes(value)) {
+      return
+    }
+    candidates.push(value)
+  }
+
+  addCandidate(preferredFaviconUrl)
+
+  const normalized = validateAndNormalizeUrl(rawUrl || '')
+  if (!normalized.isValid) {
+    return candidates
+  }
+
+  const parsed = new URL(normalized.normalizedUrl)
+  const hostname = parsed.hostname
+
+  addCandidate(`${parsed.origin}/favicon.ico`)
+  addCandidate(`https://www.google.com/s2/favicons?sz=64&domain=${hostname}`)
+  addCandidate(`https://icons.duckduckgo.com/ip3/${hostname}.ico`)
+
+  return candidates
+}
+
 export const toDisplayUrl = (value) => value.replace(/^https?:\/\//i, '')
 
 export const toHostname = (value) => {

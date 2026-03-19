@@ -35,6 +35,7 @@ const nextSessionKey = () =>
   `${Date.now()}-${Math.random().toString(16).slice(2)}`
 
 const HEX_COLOR_REGEX = /^#[0-9a-f]{6}$/i
+const BOOT_OVERLAY_FADE_MS = 420
 
 const toRgb = (hexColor) => {
   if (!HEX_COLOR_REGEX.test(hexColor || '')) {
@@ -55,6 +56,7 @@ function App() {
     activeCategoryId,
     accentColor,
     isBootstrapping,
+    initialized,
     errorMessage,
     showSettings,
     bootstrap,
@@ -80,6 +82,7 @@ function App() {
       activeCategoryId: state.activeCategoryId,
       accentColor: state.accentColor,
       isBootstrapping: state.isBootstrapping,
+      initialized: state.initialized,
       errorMessage: state.errorMessage,
       showSettings: state.showSettings,
       bootstrap: state.bootstrap,
@@ -106,10 +109,22 @@ function App() {
   const [categoryModal, setCategoryModal] = useState(CATEGORY_MODAL_DEFAULT)
   const [deleteModal, setDeleteModal] = useState(DELETE_MODAL_DEFAULT)
   const [dragMode, setDragMode] = useState(false)
+  const [bootOverlayState, setBootOverlayState] = useState('visible')
+  const [hasBootResolved, setHasBootResolved] = useState(false)
 
   useEffect(() => {
     bootstrap()
   }, [bootstrap])
+
+  useEffect(() => {
+    if (hasBootResolved) {
+      return
+    }
+
+    if (initialized || (!isBootstrapping && Boolean(errorMessage))) {
+      setHasBootResolved(true)
+    }
+  }, [hasBootResolved, initialized, isBootstrapping, errorMessage])
 
   useEffect(() => {
     const root = document.documentElement
@@ -121,6 +136,22 @@ function App() {
     root.style.setProperty('--accent-color', accentColor)
     root.style.setProperty('--accent-rgb', `${rgb.r} ${rgb.g} ${rgb.b}`)
   }, [accentColor])
+
+  const isBooting = !hasBootResolved
+
+  useEffect(() => {
+    if (isBooting) {
+      setBootOverlayState('visible')
+      return undefined
+    }
+
+    setBootOverlayState('fading')
+    const timeoutId = window.setTimeout(() => {
+      setBootOverlayState('hidden')
+    }, BOOT_OVERLAY_FADE_MS)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [isBooting])
 
   const activeCategory = useMemo(
     () => categories.find((category) => category.id === activeCategoryId) || null,
@@ -293,93 +324,117 @@ function App() {
       ? `Delete "${deleteModal.payload?.categoryName}" and all website tiles inside it?`
       : `Delete "${deleteModal.payload?.websiteName}" from this category?`
 
-  if (isBootstrapping) {
-    return <LoadingState />
-  }
+  const shouldRenderBootOverlay = bootOverlayState !== 'hidden'
 
   return (
-    <div className="min-h-screen">
-      <CategoryTabs
-        categories={categories}
-        activeCategoryId={activeCategoryId}
-        dragMode={dragMode}
-        onToggleDragMode={() => setDragMode((value) => !value)}
-        onReorderCategories={handleReorderCategories}
-        onSelectCategory={selectCategory}
-        onCreateCategory={handleOpenCreateCategory}
-        onRenameCategory={handleOpenRenameCategory}
-        onOpenSettings={openSettings}
-        onAddWebsite={handleOpenCreateWebsite}
-        canAddWebsite={Boolean(activeCategory)}
-      />
+    <>
+      <div
+        className={`app-shell min-h-screen transition-opacity duration-500 ${
+          isBooting ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
+        <div className="accent-bubble-layer" aria-hidden="true">
+          <span className="accent-bubble accent-bubble-1" />
+          <span className="accent-bubble accent-bubble-2" />
+          <span className="accent-bubble accent-bubble-3" />
+          <span className="accent-bubble accent-bubble-4" />
+        </div>
 
-      <main className="flex min-h-[calc(100vh-44px)] w-full flex-col sm:min-h-[calc(100vh-48px)]">
-        {errorMessage ? (
-          <section className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl border border-rose-900/60 bg-rose-950/35 px-4 py-3 sm:mx-6">
-            <p className="text-sm font-medium text-rose-300">{errorMessage}</p>
-            <button
-              type="button"
-              onClick={clearError}
-              className="focus-ring rounded-lg border border-rose-900 px-3 py-1 text-xs font-semibold text-rose-300 transition hover:border-rose-700"
-            >
-              Dismiss
-            </button>
+        <CategoryTabs
+          categories={categories}
+          activeCategoryId={activeCategoryId}
+          dragMode={dragMode}
+          onToggleDragMode={() => setDragMode((value) => !value)}
+          onReorderCategories={handleReorderCategories}
+          onSelectCategory={selectCategory}
+          onCreateCategory={handleOpenCreateCategory}
+          onRenameCategory={handleOpenRenameCategory}
+          onOpenSettings={openSettings}
+          onAddWebsite={handleOpenCreateWebsite}
+          canAddWebsite={Boolean(activeCategory)}
+        />
+
+        <main className="flex min-h-[calc(100vh-44px)] w-full flex-col sm:min-h-[calc(100vh-48px)]">
+          {errorMessage ? (
+            <section className="mx-4 mt-3 flex items-center justify-between gap-3 rounded-xl border border-rose-500/35 bg-rose-500/10 px-4 py-3 backdrop-blur-md sm:mx-6">
+              <p className="text-sm font-medium text-rose-200">{errorMessage}</p>
+              <button
+                type="button"
+                onClick={clearError}
+                className="focus-ring rounded-lg border border-rose-400/40 bg-rose-500/10 px-3 py-1 text-xs font-semibold text-rose-100 transition hover:bg-rose-500/20"
+              >
+                Dismiss
+              </button>
+            </section>
+          ) : null}
+
+          <section className="hide-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
+            <WebsiteGrid
+              hasCategory={Boolean(activeCategory)}
+              websites={filteredWebsites}
+              onEdit={handleOpenEditWebsite}
+              onReorderWebsites={handleReorderWebsites}
+              dragMode={dragMode}
+            />
           </section>
-        ) : null}
+        </main>
 
-        <section className="hide-scrollbar min-h-0 flex-1 overflow-y-auto bg-black px-4 py-4 sm:px-6">
-          <WebsiteGrid
-            hasCategory={Boolean(activeCategory)}
-            websites={filteredWebsites}
-            onEdit={handleOpenEditWebsite}
-            onReorderWebsites={handleReorderWebsites}
-            dragMode={dragMode}
-          />
-        </section>
-      </main>
+        <WebsiteFormModal
+          key={websiteModal.sessionKey}
+          isOpen={websiteModal.isOpen}
+          mode={websiteModal.mode}
+          initialValues={websiteModal.website}
+          onClose={closeWebsiteModal}
+          onSubmit={handleWebsiteSubmit}
+          onRequestDelete={handleRequestDeleteFromEditor}
+        />
 
-      <WebsiteFormModal
-        key={websiteModal.sessionKey}
-        isOpen={websiteModal.isOpen}
-        mode={websiteModal.mode}
-        initialValues={websiteModal.website}
-        onClose={closeWebsiteModal}
-        onSubmit={handleWebsiteSubmit}
-        onRequestDelete={handleRequestDeleteFromEditor}
-      />
+        <CategoryFormModal
+          key={categoryModal.sessionKey}
+          isOpen={categoryModal.isOpen}
+          mode={categoryModal.mode}
+          initialName={categoryModal.category?.name || ''}
+          onClose={closeCategoryModal}
+          onSubmit={handleCategorySubmit}
+          onRequestDelete={handleRequestDeleteCategoryFromEditor}
+        />
 
-      <CategoryFormModal
-        key={categoryModal.sessionKey}
-        isOpen={categoryModal.isOpen}
-        mode={categoryModal.mode}
-        initialName={categoryModal.category?.name || ''}
-        onClose={closeCategoryModal}
-        onSubmit={handleCategorySubmit}
-        onRequestDelete={handleRequestDeleteCategoryFromEditor}
-      />
-
-      <ConfirmModal
-        key={deleteModal.sessionKey}
-        isOpen={deleteModal.isOpen}
-        title={deleteTitle}
-        message={deleteMessage}
-        confirmLabel="Delete"
-        onClose={closeDeleteModal}
-        onConfirm={handleDeleteConfirm}
-      />
+        <ConfirmModal
+          key={deleteModal.sessionKey}
+          isOpen={deleteModal.isOpen}
+          title={deleteTitle}
+          message={deleteMessage}
+          confirmLabel="Delete"
+          onClose={closeDeleteModal}
+          onConfirm={handleDeleteConfirm}
+        />
 
       <SettingsModal
         isOpen={showSettings}
         onClose={closeSettings}
+        categories={categories}
         accentColor={accentColor}
         onAccentColorChange={(value) => {
           void setAccentColor(value)
         }}
-        onExportJson={exportData}
-        onImportJson={importData}
-        onResetData={resetData}
-      />
-    </div>
+          onExportJson={exportData}
+          onImportJson={importData}
+          onResetData={resetData}
+        />
+      </div>
+
+      {shouldRenderBootOverlay ? (
+        <div
+          className={`boot-overlay fixed inset-0 z-[90] transition-opacity duration-500 ${
+            bootOverlayState === 'fading'
+              ? 'pointer-events-none opacity-0'
+              : 'opacity-100'
+          }`}
+        >
+          <LoadingState />
+        </div>
+      ) : null}
+    </>
   )
 }
 
