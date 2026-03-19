@@ -5,8 +5,10 @@ import CategoryFormModal from './components/CategoryFormModal'
 import ConfirmModal from './components/ConfirmModal'
 import LoadingState from './components/LoadingState'
 import SettingsModal from './components/SettingsModal'
+import ToastViewport from './components/ToastViewport'
 import WebsiteFormModal from './components/WebsiteFormModal'
 import WebsiteGrid from './components/WebsiteGrid'
+import { useToast } from './hooks/useToast'
 import { useSiteHubStore } from './store/useSiteHubStore'
 
 const WEBSITE_MODAL_DEFAULT = {
@@ -113,6 +115,7 @@ function App() {
   const [dragMode, setDragMode] = useState(false)
   const [bootOverlayState, setBootOverlayState] = useState('visible')
   const [hasBootResolved, setHasBootResolved] = useState(false)
+  const { toasts, pushToast, dismissToast } = useToast()
 
   useEffect(() => {
     bootstrap()
@@ -168,6 +171,7 @@ function App() {
   const closeWebsiteModal = () => setWebsiteModal(WEBSITE_MODAL_DEFAULT)
   const closeCategoryModal = () => setCategoryModal(CATEGORY_MODAL_DEFAULT)
   const closeDeleteModal = () => setDeleteModal(DELETE_MODAL_DEFAULT)
+  const notify = (payload) => pushToast(payload)
 
   const handleOpenCreateWebsite = () => {
     if (!activeCategory) {
@@ -392,6 +396,22 @@ function App() {
           onClose={closeWebsiteModal}
           onSubmit={handleWebsiteSubmit}
           onRequestDelete={handleRequestDeleteFromEditor}
+          onResult={(result, context) => {
+            if (!result?.ok) {
+              notify({
+                type: 'error',
+                title: 'Unable to save website',
+                description: result?.error || 'Please review website details.',
+              })
+              return
+            }
+
+            notify({
+              type: context?.mode === 'edit' ? 'info' : 'success',
+              title: context?.mode === 'edit' ? 'Website updated' : 'Website added',
+              description: context?.values?.name || '',
+            })
+          }}
         />
 
         <CategoryFormModal
@@ -403,6 +423,22 @@ function App() {
           onClose={closeCategoryModal}
           onSubmit={handleCategorySubmit}
           onRequestDelete={handleRequestDeleteCategoryFromEditor}
+          onResult={(result, context) => {
+            if (!result?.ok) {
+              notify({
+                type: 'error',
+                title: 'Unable to save category',
+                description: result?.error || 'Please try a different name.',
+              })
+              return
+            }
+
+            notify({
+              type: context?.mode === 'edit' ? 'info' : 'success',
+              title: context?.mode === 'edit' ? 'Category renamed' : 'Category created',
+              description: context?.name || '',
+            })
+          }}
         />
 
         <ConfirmModal
@@ -413,6 +449,21 @@ function App() {
           confirmLabel="Delete"
           onClose={closeDeleteModal}
           onConfirm={handleDeleteConfirm}
+          onResult={(result) => {
+            if (!result?.ok) {
+              notify({
+                type: 'error',
+                title: 'Delete failed',
+                description: result?.error || 'Try again in a moment.',
+              })
+              return
+            }
+
+            notify({
+              type: 'delete',
+              title: deleteModal.type === 'category' ? 'Category deleted' : 'Website deleted',
+            })
+          }}
         />
 
       <SettingsModal
@@ -426,8 +477,11 @@ function App() {
           onExportJson={exportData}
           onImportJson={importData}
           onResetData={resetData}
+          onNotify={notify}
         />
       </div>
+
+      <ToastViewport toasts={toasts} onDismiss={dismissToast} />
 
       {shouldRenderBootOverlay ? (
         <div

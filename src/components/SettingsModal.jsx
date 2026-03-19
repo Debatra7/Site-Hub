@@ -4,13 +4,14 @@ import {
   RiArrowLeftLine,
   RiClipboardLine,
   RiDatabase2Line,
+  RiDownload2Line,
   RiDeleteBinLine,
   RiFileCopyLine,
   RiFileDownloadLine,
   RiFileUploadLine,
+  RiFolderDownloadLine,
   RiPaletteLine,
   RiRefreshLine,
-  RiUpload2Line,
 } from '@remixicon/react'
 import ModalShell from './ModalShell'
 
@@ -55,6 +56,7 @@ export default function SettingsModal({
   onExportJson,
   onResetData,
   onDuplicateAllWebsites,
+  onNotify,
   categories = [],
 }) {
   const [panel, setPanel] = useState(PANEL_ROOT)
@@ -144,15 +146,29 @@ export default function SettingsModal({
       if (!clipboardText.trim()) {
         setImportError('Clipboard is empty.')
         setImportMessage('')
+        onNotify?.({
+          type: 'error',
+          title: 'Clipboard is empty',
+          description: 'Copy JSON and try again.',
+        })
         return
       }
 
       setImportJson(clipboardText)
       setImportError('')
       setImportMessage('Pasted from clipboard.')
+      onNotify?.({
+        type: 'info',
+        title: 'Pasted from clipboard',
+      })
     } catch {
       setImportError('Clipboard access was blocked. Paste manually.')
       setImportMessage('')
+      onNotify?.({
+        type: 'error',
+        title: 'Clipboard blocked',
+        description: 'Paste JSON manually in the textarea.',
+      })
     }
   }
 
@@ -173,15 +189,28 @@ export default function SettingsModal({
       if (!contents.trim()) {
         setImportError('Selected file is empty.')
         setImportMessage('')
+        onNotify?.({
+          type: 'error',
+          title: 'Import file is empty',
+        })
         return
       }
 
       setImportJson(contents)
       setImportError('')
       setImportMessage(`Loaded ${file.name}.`)
+      onNotify?.({
+        type: 'info',
+        title: 'Import file loaded',
+        description: file.name,
+      })
     } catch {
       setImportError('Unable to read selected file.')
       setImportMessage('')
+      onNotify?.({
+        type: 'error',
+        title: 'Unable to read file',
+      })
     }
   }
 
@@ -189,6 +218,10 @@ export default function SettingsModal({
     if (!importJson.trim()) {
       setImportError('Paste or load JSON data first.')
       setImportMessage('')
+      onNotify?.({
+        type: 'error',
+        title: 'Missing import JSON',
+      })
       return
     }
 
@@ -200,11 +233,20 @@ export default function SettingsModal({
 
     if (!result?.ok) {
       setImportError(result?.error || 'Import failed.')
+      onNotify?.({
+        type: 'error',
+        title: 'Import failed',
+        description: result?.error || 'Please verify your JSON data.',
+      })
       return
     }
 
     setImportMessage('Import completed successfully.')
     setImportError('')
+    onNotify?.({
+      type: 'info',
+      title: 'Import completed',
+    })
   }
 
   const handleGenerateExport = async () => {
@@ -215,11 +257,20 @@ export default function SettingsModal({
 
     if (!result?.ok) {
       setExportMessage(result?.error || 'Export failed.')
+      onNotify?.({
+        type: 'error',
+        title: 'Export failed',
+        description: result?.error || 'Try again in a moment.',
+      })
       return
     }
 
     setExportJson(result.json)
     setExportMessage('Export generated. Copy or download it.')
+    onNotify?.({
+      type: 'info',
+      title: 'Export generated',
+    })
   }
 
   const handleCopyExport = async () => {
@@ -230,8 +281,17 @@ export default function SettingsModal({
     try {
       await navigator.clipboard.writeText(exportJson)
       setExportMessage('Export JSON copied to clipboard.')
+      onNotify?.({
+        type: 'info',
+        title: 'Export copied',
+      })
     } catch {
       setExportMessage('Unable to copy automatically. Please copy manually.')
+      onNotify?.({
+        type: 'error',
+        title: 'Copy failed',
+        description: 'Please copy the export JSON manually.',
+      })
     }
   }
 
@@ -248,6 +308,10 @@ export default function SettingsModal({
     anchor.click()
     URL.revokeObjectURL(url)
     setExportMessage('Export downloaded.')
+    onNotify?.({
+      type: 'info',
+      title: 'Export downloaded',
+    })
   }
 
   const handleResetAll = async () => {
@@ -265,15 +329,28 @@ export default function SettingsModal({
 
     if (!result?.ok) {
       setResetMessage(result?.error || 'Reset failed.')
+      onNotify?.({
+        type: 'error',
+        title: 'Reset failed',
+        description: result?.error || 'Please try again.',
+      })
       return
     }
 
     setResetMessage('All data has been reset.')
+    onNotify?.({
+      type: 'delete',
+      title: 'Workspace reset',
+    })
   }
 
   const handleDuplicateAllWebsites = async () => {
     if (typeof onDuplicateAllWebsites !== 'function') {
       setDuplicateMessage('Feature not available.')
+      onNotify?.({
+        type: 'error',
+        title: 'Duplication unavailable',
+      })
       return
     }
 
@@ -288,6 +365,10 @@ export default function SettingsModal({
     const multiplier = Number(raw)
     if (!Number.isInteger(multiplier) || multiplier < 2) {
       setDuplicateMessage('Please enter a whole number greater than or equal to 2.')
+      onNotify?.({
+        type: 'error',
+        title: 'Invalid duplicate count',
+      })
       return
     }
 
@@ -299,10 +380,20 @@ export default function SettingsModal({
 
     if (!result?.ok) {
       setDuplicateMessage(result?.error || 'Duplication failed.')
+      onNotify?.({
+        type: 'error',
+        title: 'Duplication failed',
+        description: result?.error || 'Please try again.',
+      })
       return
     }
 
     setDuplicateMessage(`Duplicated all websites ${multiplier}x in each category.`)
+    onNotify?.({
+      type: 'info',
+      title: 'Duplication completed',
+      description: `${multiplier}x copy created.`,
+    })
   }
 
   const BackButton = (
@@ -393,7 +484,7 @@ export default function SettingsModal({
                   >
                     <span className="inline-flex items-center gap-2">
                       <RiRefreshLine className="h-4 w-4" aria-hidden="true" />
-                      Reset Default
+                      Default
                     </span>
                   </button>
                 </div>
@@ -463,7 +554,7 @@ export default function SettingsModal({
               className={cardButtonClass}
             >
               <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-100">
-                <RiFileUploadLine className="h-4 w-4" aria-hidden="true" />
+                <RiDownload2Line className="h-4 w-4" aria-hidden="true" />
                 Import JSON
               </span>
               <span className="mt-1 block text-xs text-slate-400">
@@ -477,7 +568,7 @@ export default function SettingsModal({
               className={cardButtonClass}
             >
               <span className="inline-flex items-center gap-2 text-sm font-semibold text-slate-100">
-                <RiFileDownloadLine className="h-4 w-4" aria-hidden="true" />
+                <RiFileUploadLine className="h-4 w-4" aria-hidden="true" />
                 Export JSON
               </span>
               <span className="mt-1 block text-xs text-slate-400">
@@ -492,7 +583,7 @@ export default function SettingsModal({
             >
               <span className="inline-flex items-center gap-2 text-sm font-semibold text-rose-100">
                 <RiDeleteBinLine className="h-4 w-4" aria-hidden="true" />
-                Delete Everything
+                Default
               </span>
               <span className="mt-1 block text-xs text-rose-200/80">
                 Permanently clears all categories, websites, and settings.
@@ -532,7 +623,7 @@ export default function SettingsModal({
                 className={actionButtonClass}
               >
                 <span className="inline-flex items-center gap-2">
-                  <RiFileUploadLine className="h-4 w-4" aria-hidden="true" />
+                  <RiFileDownloadLine className="h-4 w-4" aria-hidden="true" />
                   Load File
                 </span>
               </button>
@@ -543,7 +634,7 @@ export default function SettingsModal({
                 className="focus-ring accent-bg accent-border accent-shadow rounded-lg border px-4 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <span className="inline-flex items-center gap-2">
-                  <RiUpload2Line className="h-4 w-4" aria-hidden="true" />
+                  <RiDownload2Line className="h-4 w-4" aria-hidden="true" />
                   {isImporting ? 'Importing...' : 'Import'}
                 </span>
               </button>
@@ -620,7 +711,7 @@ export default function SettingsModal({
                 className={`${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 <span className="inline-flex items-center gap-2">
-                  <RiFileDownloadLine className="h-4 w-4" aria-hidden="true" />
+                  <RiFolderDownloadLine className="h-4 w-4" aria-hidden="true" />
                   Download
                 </span>
               </button>
@@ -643,7 +734,7 @@ export default function SettingsModal({
 
       <ModalShell
         isOpen={isOpen && panel === PANEL_RESET}
-        title="Delete Everything"
+        title="Default"
         onClose={closeAll}
       >
         <div className="space-y-4">
@@ -665,7 +756,7 @@ export default function SettingsModal({
             >
               <span className="inline-flex items-center gap-2">
                 <RiDeleteBinLine className="h-4 w-4" aria-hidden="true" />
-                {isResetting ? 'Deleting...' : 'Delete Everything'}
+                {isResetting ? 'Resetting...' : 'Default'}
               </span>
             </button>
 

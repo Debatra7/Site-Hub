@@ -8,6 +8,7 @@ export default function WebsiteFormModal({
   onClose,
   onSubmit,
   onRequestDelete,
+  onResult,
 }) {
   const [values, setValues] = useState(() => ({
     name: initialValues?.name || '',
@@ -29,6 +30,7 @@ export default function WebsiteFormModal({
     setErrorMessage('')
 
     const result = await onSubmit(values)
+    onResult?.(result, { mode, values })
     if (!result?.ok) {
       setErrorMessage(result?.error || 'Unable to save website.')
       setIsSubmitting(false)

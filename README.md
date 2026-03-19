@@ -13,6 +13,7 @@ Check out the live version: [https://site-hub.netlify.app/](https://site-hub.net
 - **Import / Export JSON**: Backup and restore category data with JSON payloads.
 - **Drag and Drop Reordering**: Reorder categories and website cards using DnD interactions.
 - **Theme Customization**: Accent color customization with presets and manual color input.
+- **Animated Toast Notifications**: Glassmorphism toaster alerts appear throughout the app for action feedback.
 - **Offline-First**: IndexedDB persistence and service-worker-based app shell caching.
 - **Validation & Duplicate Protection**: URL normalization and duplicate URL prevention within a category.
 

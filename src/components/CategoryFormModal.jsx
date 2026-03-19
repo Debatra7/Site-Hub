@@ -9,6 +9,7 @@ export default function CategoryFormModal({
   onClose,
   onSubmit,
   onRequestDelete,
+  onResult,
 }) {
   const [name, setName] = useState(() => initialName || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -22,6 +23,7 @@ export default function CategoryFormModal({
     setErrorMessage('')
 
     const result = await onSubmit({ name })
+    onResult?.(result, { mode, name })
     if (!result?.ok) {
       setErrorMessage(result?.error || 'Unable to save category.')
       setIsSubmitting(false)

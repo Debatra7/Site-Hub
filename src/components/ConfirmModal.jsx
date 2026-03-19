@@ -8,6 +8,7 @@ export default function ConfirmModal({
   confirmLabel = 'Confirm',
   onClose,
   onConfirm,
+  onResult,
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
@@ -21,6 +22,7 @@ export default function ConfirmModal({
     setErrorMessage('')
 
     const result = await onConfirm()
+    onResult?.(result)
     if (!result?.ok) {
       setErrorMessage(result?.error || 'Action failed.')
       setIsSubmitting(false)
