@@ -1,0 +1,664 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
+  OTHER
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum Visibility {
+  PRIVATE
+  UNLISTED
+  SHARED
+  PUBLIC
+}
+
+enum NoteType {
+  TEXT
+  CHECKLIST
+  MEDIA
+  LINK
+}
+
+enum SharePermission {
+  VIEW
+  EDIT
+}
+
+enum ShareStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+enum EntityType {
+  USER_PREFERENCE
+  CATEGORY
+  WEBSITE
+  STICKY_NOTE
+  TAG
+  SHARED_BOARD
+  MEDIA_ASSET
+}
+
+enum SyncOperationType {
+  INSERT
+  UPDATE
+  DELETE
+}
+
+enum SyncOperationStatus {
+  PENDING
+  APPLIED
+  CONFLICTED
+  REJECTED
+}
+
+enum ConflictStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ImportConflictStrategy {
+  MERGE
+  REPLACE
+  SKIP
+  MANUAL
+}
+
+enum AnalyticsEventSource {
+  WEB_APP
+  PWA
+  EXTENSION
+  SERVER
+  ADMIN
+}
+
+enum AuditAction {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  SHARE
+  EXPORT
+  IMPORT
+  SYNC
+  ADMIN_ACCESS
+  SECURITY_EVENT
+}
+
+model User {
+  id            String        @id @default(uuid())
+  email         String        @unique
+  displayName   String?
+  avatarUrl     String?
+  role          UserRole      @default(USER)
+  status        AccountStatus @default(ACTIVE)
+  activeMediaId String?
+  deletedAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  activeMedia     MediaAsset?         @relation("ActiveUserMedia", fields: [activeMediaId], references: [id], onDelete: SetNull)
+  oauthAccounts   OAuthAccount[]
+  preferences     UserPreference?
+  devices         SyncDevice[]
+  sessions        Session[]
+  refreshTokens   RefreshToken[]
+  categories      Category[]
+  websites        Website[]
+  stickyNotes     StickyNote[]
+  tags            Tag[]
+  mediaAssets     MediaAsset[]        @relation("UserMediaAssets")
+  sharedBoards    SharedBoard[]       @relation("SharedBoardOwner")
+  sharedAccess    SharedBoardMember[]
+  syncOperations  SyncOperation[]
+  entityVersions  EntityVersion[]
+  conflictLogs    ConflictLog[]
+  auditLogs       AuditLog[]
+  securityEvents  SecurityEvent[]
+  analyticsEvents AnalyticsEvent[]
+  importJobs      ImportJob[]
+  exportJobs      ExportJob[]
+
+  @@index([role])
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model OAuthAccount {
+  id                    String        @id @default(uuid())
+  userId                String
+  provider              OAuthProvider
+  providerAccountId     String
+  providerEmail         String?
+  accessTokenEncrypted  String?
+  refreshTokenEncrypted String?
+  scopes                String[]
+  expiresAt             DateTime?
+  lastUsedAt            DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@index([provider, providerEmail])
+}
+
+model UserPreference {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  theme           String   @default("system")
+  accentColor     String?
+  layout          Json?
+  dashboardConfig Json?
+  privacyDefaults Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SyncDevice {
+  id         String    @id @default(uuid())
+  userId     String
+  deviceName String?
+  deviceType String?
+  platform   String?
+  browser    String?
+  clientId   String
+  lastSeenAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions       Session[]
+  refreshTokens  RefreshToken[]
+  syncOperations SyncOperation[]
+  conflictLogs   ConflictLog[]
+
+  @@unique([userId, clientId])
+  @@index([userId, lastSeenAt])
+}
+
+model Session {
+  id               String        @id @default(uuid())
+  userId           String
+  deviceId         String?
+  sessionTokenHash String        @unique
+  ipAddress        String?
+  userAgent        String?
+  status           SessionStatus @default(ACTIVE)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime      @default(now())
+  lastSeenAt       DateTime?
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device        SyncDevice?    @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  refreshTokens RefreshToken[]
+
+  @@index([userId, status])
+  @@index([deviceId])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id           String        @id @default(uuid())
+  userId       String
+  sessionId    String
+  deviceId     String?
+  tokenHash    String        @unique
+  familyId     String
+  status       SessionStatus @default(ACTIVE)
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  createdAt    DateTime      @default(now())
+
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session    Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  device     SyncDevice?    @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  replacedBy RefreshToken?  @relation("RefreshTokenRotation", fields: [replacedById], references: [id], onDelete: SetNull)
+  replaces   RefreshToken[] @relation("RefreshTokenRotation")
+
+  @@index([userId, status])
+  @@index([sessionId])
+  @@index([familyId])
+  @@index([expiresAt])
+}
+
+model Category {
+  id               String     @id @default(uuid())
+  userId           String
+  name             String
+  icon             String?
+  wallpaperMediaId String?
+  visibility       Visibility @default(PRIVATE)
+  orderIndex       Int
+  version          Int        @default(1)
+  deletedAt        DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wallpaperMedia MediaAsset?   @relation("CategoryWallpaper", fields: [wallpaperMediaId], references: [id], onDelete: SetNull)
+  websites       Website[]
+  stickyNotes    StickyNote[]
+  tags           CategoryTag[]
+  sharedBoards   SharedBoard[]
+
+  @@unique([userId, name])
+  @@index([userId, orderIndex])
+  @@index([userId, visibility])
+  @@index([deletedAt])
+}
+
+model Website {
+  id                String    @id @default(uuid())
+  userId            String
+  categoryId        String
+  url               String
+  normalizedUrl     String
+  title             String?
+  description       String?
+  faviconUrl        String?
+  thumbnailMediaId  String?
+  customIconMediaId String?
+  customColor       String?
+  note              String?
+  isPinned          Boolean   @default(false)
+  orderIndex        Int
+  metadata          Json?
+  version           Int       @default(1)
+  deletedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category        Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  thumbnailMedia  MediaAsset?  @relation("WebsiteThumbnail", fields: [thumbnailMediaId], references: [id], onDelete: SetNull)
+  customIconMedia MediaAsset?  @relation("WebsiteCustomIcon", fields: [customIconMediaId], references: [id], onDelete: SetNull)
+  tags            WebsiteTag[]
+
+  @@unique([categoryId, normalizedUrl])
+  @@index([userId, updatedAt])
+  @@index([categoryId, orderIndex])
+  @@index([categoryId, isPinned])
+  @@index([deletedAt])
+}
+
+model StickyNote {
+  id          String     @id @default(uuid())
+  userId      String
+  categoryId  String?
+  type        NoteType   @default(TEXT)
+  title       String?
+  content     Json
+  positionX   Int        @default(0)
+  positionY   Int        @default(0)
+  width       Int?
+  height      Int?
+  color       String?
+  reminderAt  DateTime?
+  completedAt DateTime?
+  visibility  Visibility @default(PRIVATE)
+  version     Int        @default(1)
+  deletedAt   DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category?       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tags     StickyNoteTag[]
+
+  @@index([userId, updatedAt])
+  @@index([categoryId, positionX, positionY])
+  @@index([userId, reminderAt])
+  @@index([userId, visibility])
+  @@index([deletedAt])
+}
+
+model Tag {
+  id             String   @id @default(uuid())
+  userId         String
+  name           String
+  normalizedName String
+  color          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  websites    WebsiteTag[]
+  stickyNotes StickyNoteTag[]
+  categories  CategoryTag[]
+
+  @@unique([userId, normalizedName])
+  @@index([userId, name])
+}
+
+model WebsiteTag {
+  websiteId String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  website Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([websiteId, tagId])
+  @@index([tagId])
+}
+
+model StickyNoteTag {
+  stickyNoteId String
+  tagId        String
+  createdAt    DateTime @default(now())
+
+  stickyNote StickyNote @relation(fields: [stickyNoteId], references: [id], onDelete: Cascade)
+  tag        Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([stickyNoteId, tagId])
+  @@index([tagId])
+}
+
+model CategoryTag {
+  categoryId String
+  tagId      String
+  createdAt  DateTime @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, tagId])
+  @@index([tagId])
+}
+
+model MediaAsset {
+  id         String     @id @default(uuid())
+  userId     String
+  storageKey String
+  url        String?
+  mimeType   String
+  byteSize   Int
+  width      Int?
+  height     Int?
+  durationMs Int?
+  checksum   String?
+  visibility Visibility @default(PRIVATE)
+  createdAt  DateTime   @default(now())
+  deletedAt  DateTime?
+
+  user               User       @relation("UserMediaAssets", fields: [userId], references: [id], onDelete: Cascade)
+  activeForUsers     User[]     @relation("ActiveUserMedia")
+  categoryWallpapers Category[] @relation("CategoryWallpaper")
+  websiteThumbnails  Website[]  @relation("WebsiteThumbnail")
+  websiteIcons       Website[]  @relation("WebsiteCustomIcon")
+
+  @@unique([userId, storageKey])
+  @@index([userId, createdAt])
+  @@index([visibility])
+}
+
+model SharedBoard {
+  id             String          @id @default(uuid())
+  ownerId        String
+  categoryId     String
+  tokenHash      String          @unique
+  permission     SharePermission @default(VIEW)
+  status         ShareStatus     @default(ACTIVE)
+  allowDiscovery Boolean         @default(false)
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  owner    User                @relation("SharedBoardOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  category Category            @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  members  SharedBoardMember[]
+
+  @@index([ownerId, status])
+  @@index([categoryId])
+  @@index([expiresAt])
+}
+
+model SharedBoardMember {
+  id            String          @id @default(uuid())
+  sharedBoardId String
+  userId        String
+  permission    SharePermission @default(VIEW)
+  invitedEmail  String?
+  acceptedAt    DateTime?
+  revokedAt     DateTime?
+  createdAt     DateTime        @default(now())
+
+  sharedBoard SharedBoard @relation(fields: [sharedBoardId], references: [id], onDelete: Cascade)
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sharedBoardId, userId])
+  @@index([userId])
+  @@index([sharedBoardId, permission])
+}
+
+model SyncOperation {
+  id             String              @id @default(uuid())
+  userId         String
+  deviceId       String?
+  idempotencyKey String
+  entityType     EntityType
+  entityId       String
+  operation      SyncOperationType
+  baseVersion    Int?
+  clientVersion  Int
+  serverVersion  Int?
+  payload        Json?
+  status         SyncOperationStatus @default(PENDING)
+  errorCode      String?
+  errorMessage   String?
+  createdAt      DateTime            @default(now())
+  appliedAt      DateTime?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device       SyncDevice?   @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  conflictLogs ConflictLog[]
+
+  @@unique([userId, idempotencyKey])
+  @@index([userId, createdAt])
+  @@index([userId, entityType, entityId])
+  @@index([status, createdAt])
+}
+
+model EntityVersion {
+  id                String            @id @default(uuid())
+  userId            String
+  entityType        EntityType
+  entityId          String
+  version           Int
+  operation         SyncOperationType
+  snapshot          Json
+  changedFields     String[]
+  changedByDeviceId String?
+  createdAt         DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId, version])
+  @@index([userId, createdAt])
+  @@index([userId, entityType, entityId])
+}
+
+model ConflictLog {
+  id              String                  @id @default(uuid())
+  userId          String
+  deviceId        String?
+  syncOperationId String?
+  entityType      EntityType
+  entityId        String
+  clientVersion   Int?
+  serverVersion   Int?
+  clientSnapshot  Json?
+  serverSnapshot  Json?
+  resolution      ImportConflictStrategy?
+  status          ConflictStatus          @default(OPEN)
+  resolvedAt      DateTime?
+  createdAt       DateTime                @default(now())
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device        SyncDevice?    @relation(fields: [deviceId], references: [id], onDelete: SetNull)
+  syncOperation SyncOperation? @relation(fields: [syncOperationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status])
+  @@index([userId, entityType, entityId])
+  @@index([createdAt])
+}
+
+model AnalyticsEvent {
+  id          String               @id @default(uuid())
+  userId      String?
+  anonymousId String?
+  sessionId   String?
+  source      AnalyticsEventSource
+  eventName   String
+  properties  Json?
+  occurredAt  DateTime             @default(now())
+  createdAt   DateTime             @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([eventName, occurredAt])
+  @@index([source, occurredAt])
+  @@index([userId, occurredAt])
+  @@index([anonymousId])
+}
+
+model AnalyticsAggregate {
+  id          String   @id @default(uuid())
+  metricName  String
+  granularity String
+  bucketStart DateTime
+  dimensions  Json?
+  value       Decimal  @db.Decimal(20, 4)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([metricName, granularity, bucketStart])
+  @@index([bucketStart])
+}
+
+model ImportJob {
+  id               String                 @id @default(uuid())
+  userId           String
+  source           String?
+  status           JobStatus              @default(PENDING)
+  conflictStrategy ImportConflictStrategy @default(MANUAL)
+  fileName         String?
+  fileSize         Int?
+  summary          Json?
+  errorMessage     String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime               @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model ExportJob {
+  id           String    @id @default(uuid())
+  userId       String
+  scope        String
+  status       JobStatus @default(PENDING)
+  storageKey   String?
+  fileName     String?
+  fileSize     Int?
+  expiresAt    DateTime?
+  errorMessage String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+  @@index([expiresAt])
+}
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  userId      String?
+  actorUserId String?
+  action      AuditAction
+  entityType  EntityType?
+  entityId    String?
+  ipAddress   String?
+  userAgent   String?
+  before      Json?
+  after       Json?
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+}
+
+model SecurityEvent {
+  id         String    @id @default(uuid())
+  userId     String?
+  eventType  String
+  severity   String
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([severity, createdAt])
+  @@index([resolvedAt])
+}
