@@ -72,3 +72,6 @@ Thumbs.db
 *.pem
 *.key
 *.crt
+
+# Local reference clones (not part of the app)
+_book-reference/

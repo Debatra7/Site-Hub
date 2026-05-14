@@ -241,6 +241,25 @@ export class AppDatabase extends Dexie {
             note.updatedAt = note.updatedAt ?? now;
           });
       });
+
+    // v2 categories omitted standalone `orderIndex`; Dexie requires an index for orderBy('orderIndex').
+    this.version(3).stores({
+      categories:
+        'id, userId, orderIndex, [userId+orderIndex], [userId+visibility], syncStatus, updatedAt, deletedAt',
+      websites:
+        'id, userId, categoryId, [categoryId+orderIndex], [categoryId+normalizedUrl], [userId+updatedAt], syncStatus, deletedAt',
+      stickyNotes:
+        'id, userId, categoryId, [categoryId+positionX+positionY], [userId+updatedAt], [userId+reminderAt], syncStatus, deletedAt',
+      tags: 'id, userId, [userId+normalizedName], [userId+name], syncStatus, updatedAt',
+      entityTags: 'id, [entityType+entityId], tagId, syncStatus, updatedAt',
+      preferences: 'id, userId, syncStatus, updatedAt',
+      syncQueue:
+        'id, idempotencyKey, status, nextAttemptAt, [status+nextAttemptAt], [entityType+entityId], createdAt',
+      entityVersions: 'id, [entityType+entityId+version], [entityType+entityId], createdAt',
+      conflicts: 'id, status, [entityType+entityId], createdAt',
+      syncCursors: 'id, userId, deviceId, lastSuccessfulSyncAt',
+      deviceProfiles: 'id, userId, clientId, activeAccountId, lastSeenAt',
+    });
   }
 }
 

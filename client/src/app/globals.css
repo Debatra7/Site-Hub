@@ -113,3 +113,13 @@
 .red-button {
   @apply bg-red-600 hover:bg-red-700 text-white transition-colors duration-200;
 }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

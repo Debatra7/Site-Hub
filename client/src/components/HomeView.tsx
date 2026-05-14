@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { db } from '@/lib/db';
+import { db, type Website } from '@/lib/db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Plus, MoreHorizontal } from 'lucide-react';
 import { Card } from './ui/card';
@@ -17,15 +17,13 @@ export const HomeView = () => {
 
   return (
     <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <GroupSection 
-        title="STREAMING" 
-        category={streamingCat} 
-        websites={websites?.filter(w => w.categoryId === streamingCat?.id)} 
+      <GroupSection
+        title="STREAMING"
+        websites={websites?.filter(w => w.categoryId === streamingCat?.id)}
       />
-      <GroupSection 
-        title="GAMING" 
-        category={gamingCat} 
-        websites={websites?.filter(w => w.categoryId === gamingCat?.id)} 
+      <GroupSection
+        title="GAMING"
+        websites={websites?.filter(w => w.categoryId === gamingCat?.id)}
       />
       
       {/* Empty slot for new group */}
@@ -36,7 +34,7 @@ export const HomeView = () => {
   );
 };
 
-const GroupSection = ({ title, category, websites }: { title: string, category: any, websites: any[] | undefined }) => (
+const GroupSection = ({ title, websites }: { title: string; websites: Website[] | undefined }) => (
   <Card className="glass border-none rounded-3xl p-6 flex flex-col gap-4 min-h-64 shadow-2xl">
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -59,7 +57,12 @@ const GroupSection = ({ title, category, websites }: { title: string, category: 
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
-              {w.faviconUrl ? <img src={w.faviconUrl} alt="" className="w-5 h-5" /> : <div className="w-5 h-5 bg-white/20 rounded" />}
+              {w.faviconUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- favicons from arbitrary origins
+                <img src={w.faviconUrl} alt="" className="w-5 h-5" />
+              ) : (
+                <div className="w-5 h-5 bg-white/20 rounded" />
+              )}
             </div>
             <span className="text-sm font-medium text-white/70 group-hover:text-white">{w.title || w.url}</span>
           </div>

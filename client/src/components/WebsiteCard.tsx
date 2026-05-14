@@ -22,6 +22,7 @@ export const WebsiteCard = ({ website }: WebsiteCardProps) => {
       )}>
         <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center overflow-hidden transition-transform group-hover:scale-110">
           {website.faviconUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- favicons from arbitrary origins
             <img src={website.faviconUrl} alt="" className="w-8 h-8 object-contain" />
           ) : (
             <div className="w-8 h-8 bg-white/10 rounded-lg" />
