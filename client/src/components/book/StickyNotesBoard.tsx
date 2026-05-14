@@ -609,6 +609,12 @@ function StickyNoteCard({
     };
   }, [note.w, note.h, note.x, note.y, onUpdate]);
 
+  useEffect(() => {
+    return () => {
+      if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
+    };
+  }, []);
+
   return (
     <div
       ref={cardRef}

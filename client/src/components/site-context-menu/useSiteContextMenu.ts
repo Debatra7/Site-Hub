@@ -109,7 +109,10 @@ export function useSiteContextMenu(
   useEffect(() => {
     const onScroll = () => clearLong();
     window.addEventListener('scroll', onScroll, { capture: true, passive: true });
-    return () => window.removeEventListener('scroll', onScroll, { capture: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll, { capture: true });
+      clearLong();
+    };
   }, [clearLong]);
 
   const rootHandlers = {
