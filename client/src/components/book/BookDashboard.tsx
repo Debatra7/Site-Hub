@@ -107,6 +107,8 @@ function getMediaType(src: string): BgMediaState['type'] {
   return 'image';
 }
 
+const EMPTY_ARRAY: any[] = [];
+
 export default function BookDashboard() {
   const categories = useLiveQuery(() => db.categories.orderBy('orderIndex').toArray(), []);
   const websites = useLiveQuery(() => db.websites.toArray(), []);
@@ -297,6 +299,18 @@ export default function BookDashboard() {
     },
     [activePageId, reorderHomeCategoryToSlot],
   );
+
+  const handleCreatePageClick = useCallback(() => setActiveModal('create_page'), []);
+  const handleOpenNotepadClick = useCallback(() => setActiveModal('notepad'), []);
+  const handleCreateCategoryClick = useCallback(() => setActiveModal('create_category'), []);
+
+  const handleOpenCreateCategoryFromSettings = useCallback(() => {
+    setActiveModal('create_category');
+  }, []);
+
+  const handleOpenSite = useCallback((s: { url: string }) => {
+    window.open(s.url, '_blank', 'noopener,noreferrer');
+  }, []);
 
   const openAddWebsite = useCallback(() => {
     setAddForm({
@@ -1014,7 +1028,7 @@ export default function BookDashboard() {
         activePageId={activePageId}
         setActivePageId={setActivePageId}
         themeColor={themeColor}
-        createPage={() => setActiveModal('create_page')}
+        createPage={handleCreatePageClick}
         setActiveModal={setActiveModal}
       />
 
@@ -1025,7 +1039,7 @@ export default function BookDashboard() {
           <TabWebsiteGrid
             sites={workspaceSites}
             getFavicon={getFavicon}
-            onOpenSite={(s) => window.open(s.url, '_blank', 'noopener,noreferrer')}
+            onOpenSite={handleOpenSite}
             onAddClick={openAddWebsite}
           />
         </div>
@@ -1066,13 +1080,9 @@ export default function BookDashboard() {
         renameHomeValue={renameHomeValue}
         setRenameHomeValue={setRenameHomeValue}
         handleRenameHomeSubmit={handleRenameHomeSubmit}
-        categoryOptions={activePageId === HOME_ID ? categoryOptions : []}
+        categoryOptions={activePageId === HOME_ID ? categoryOptions : EMPTY_ARRAY}
         onOpenCreateCategoryFromSettings={
-          activePageId === HOME_ID
-            ? () => {
-                setActiveModal('create_category');
-              }
-            : undefined
+          activePageId === HOME_ID ? handleOpenCreateCategoryFromSettings : undefined
         }
         editGridSiteForm={editGridSiteForm}
         setEditGridSiteForm={setEditGridSiteForm}
